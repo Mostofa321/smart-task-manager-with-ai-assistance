@@ -20,10 +20,6 @@ export default function TaskPage() {
         saveTasks(tasks)
     }, [tasks])
 
-    const handleAddTask = (newTask: Task) => {
-        setTasks((prev) => [newTask, ...prev])
-    }
-
     const handleDelete = (id: string) => {
         setTasks((prev) => prev.filter((task) => task.id !== id))
     }
@@ -37,6 +33,108 @@ export default function TaskPage() {
             )
         )
     }
+
+    // const handleSuggestSubtasks = async (taskId: string) => {
+    //     console.log('Suggest subtasks clicked for task:', taskId)
+    //     const task = tasks.find((t) => t.id === taskId)
+    //     if (!task) return
+
+    //     try {
+    //         const res = await fetch('/api/gemini', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({
+    //                 taskTitle: task.title,
+    //                 taskDescription: task.description,
+    //             }),
+    //         })
+
+    //         const data = await res.json()
+
+    //         console.log('API response:', data) // 🐞 Check what Gemini sends
+
+    //         const subtasks = data.subtasks || []
+
+    //         // const { subtasks } = await res.json()
+
+    //         // console.log('Gemini API response:', subtasks)
+
+    //         const enriched = tasks.map((t) =>
+    //             t.id === taskId
+    //                 ? {
+    //                     ...t,
+    //                     subtasks: subtasks.map((s: string, i: number) => ({
+    //                         id: `${taskId}-${i}`,
+    //                         title: s,
+    //                         isCompleted: false,
+    //                     })),
+    //                 }
+    //                 : t
+    //         )
+
+    //         setTasks(enriched)
+    //         saveTasks(enriched)
+    //     } catch (err) {
+    //         console.log('Gemini API response:', err)
+    //         console.error('Gemini API failed', err)
+    //         alert('AI suggestion failed. Try again later.')
+    //     }
+    // }
+
+    const handleSuggestSubtasks = async (taskId: string) => {
+        const task = tasks.find((t) => t.id === taskId)
+        if (!task) return
+
+        try {
+            const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
+            const prompt = `Break this task into 3–5 subtasks:\n\nTitle: ${task.title}\nDescription: ${task.description}`
+
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                }),
+            })
+
+            const data = await res.json()
+            console.log('[Client Gemini Response]', data)
+
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+            if (!text) {
+                alert('Gemini returned no suggestions.')
+                return
+            }
+
+            const subtasks = text
+                .split('\n')
+                .map((line: string) => line.replace(/^\d+\.?\s*/, '').trim())
+                .filter(Boolean)
+
+            const enriched = tasks.map((t) =>
+                t.id === taskId
+                    ? {
+                        ...t,
+                        subtasks: subtasks.map((s: any, i: any) => ({
+                            id: `${taskId}-${i}`,
+                            title: s,
+                            isCompleted: false,
+                        })),
+                    }
+                    : t
+            )
+
+            setTasks(enriched)
+            saveTasks(enriched)
+        } catch (err) {
+            console.error('Gemini client call failed', err)
+            alert('Gemini API failed.')
+        }
+    }
+
+
 
     return (
         <div>
@@ -52,7 +150,7 @@ export default function TaskPage() {
 
             {tasks.length === 0 ? (
                 <p className="text-red-500 text-center mt-[120px]">
-                     You have no tasks. Start by adding one!
+                    You have no tasks. Start by adding one!
                 </p>
             ) : (
                 <div className="space-y-4">
@@ -62,6 +160,7 @@ export default function TaskPage() {
                             task={task}
                             onDelete={handleDelete}
                             onToggleStatus={handleToggleStatus}
+                            onSuggest={handleSuggestSubtasks}
                         />
                     ))}
                 </div>

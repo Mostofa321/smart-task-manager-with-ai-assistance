@@ -14,7 +14,7 @@ export const loadTasks = (): Task[] => {
 }
 
 export const saveTasks = (tasks: Task[]) => {
-    console.log('Saving tasks:', tasks)
+    // console.log('Saving tasks:', tasks)
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
     } catch (e) {
