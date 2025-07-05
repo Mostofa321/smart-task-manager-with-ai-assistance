@@ -59,11 +59,14 @@ export default function TaskCard({ task, onDelete, onToggleStatus, onSuggest }: 
             </div>
 
             {Array.isArray(task.subtasks) && task.subtasks.length > 0 && (
-                <ul className="mt-3 pl-4 list-disc text-sm text-gray-700">
+                <>
+                <h5 className="mt-3 text-lg font-semibold text-green-50">Subtasks:</h5>
+                <ul className="mt-2 pl-4 list-disc text-sm text-green-50">
                     {task.subtasks.map((sub) => (
                         <li key={sub.id} className="mb-1">{sub.title}</li>
                     ))}
                 </ul>
+                </>
             )}
 
         </div>

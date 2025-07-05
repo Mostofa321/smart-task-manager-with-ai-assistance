@@ -34,90 +34,32 @@ export default function TaskPage() {
         )
     }
 
-    // const handleSuggestSubtasks = async (taskId: string) => {
-    //     console.log('Suggest subtasks clicked for task:', taskId)
-    //     const task = tasks.find((t) => t.id === taskId)
-    //     if (!task) return
-
-    //     try {
-    //         const res = await fetch('/api/gemini', {
-    //             method: 'POST',
-    //             headers: { 'Content-Type': 'application/json' },
-    //             body: JSON.stringify({
-    //                 taskTitle: task.title,
-    //                 taskDescription: task.description,
-    //             }),
-    //         })
-
-    //         const data = await res.json()
-
-    //         console.log('API response:', data) // 🐞 Check what Gemini sends
-
-    //         const subtasks = data.subtasks || []
-
-    //         // const { subtasks } = await res.json()
-
-    //         // console.log('Gemini API response:', subtasks)
-
-    //         const enriched = tasks.map((t) =>
-    //             t.id === taskId
-    //                 ? {
-    //                     ...t,
-    //                     subtasks: subtasks.map((s: string, i: number) => ({
-    //                         id: `${taskId}-${i}`,
-    //                         title: s,
-    //                         isCompleted: false,
-    //                     })),
-    //                 }
-    //                 : t
-    //         )
-
-    //         setTasks(enriched)
-    //         saveTasks(enriched)
-    //     } catch (err) {
-    //         console.log('Gemini API response:', err)
-    //         console.error('Gemini API failed', err)
-    //         alert('AI suggestion failed. Try again later.')
-    //     }
-    // }
-
     const handleSuggestSubtasks = async (taskId: string) => {
+        console.log('Suggest subtasks clicked for task:', taskId)
         const task = tasks.find((t) => t.id === taskId)
         if (!task) return
 
         try {
-            const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
-            const prompt = `Break this task into 3–5 subtasks:\n\nTitle: ${task.title}\nDescription: ${task.description}`
-
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+            const res = await fetch('/api/gemini', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
+                    taskTitle: task.title,
+                    taskDescription: task.description,
                 }),
             })
 
             const data = await res.json()
-            console.log('[Client Gemini Response]', data)
 
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-            if (!text) {
-                alert('Gemini returned no suggestions.')
-                return
-            }
+            console.log('API response:', data) 
 
-            const subtasks = text
-                .split('\n')
-                .map((line: string) => line.replace(/^\d+\.?\s*/, '').trim())
-                .filter(Boolean)
+            const subtasks = data.subtasks || []
 
             const enriched = tasks.map((t) =>
                 t.id === taskId
                     ? {
                         ...t,
-                        subtasks: subtasks.map((s: any, i: any) => ({
+                        subtasks: subtasks.map((s: string, i: number) => ({
                             id: `${taskId}-${i}`,
                             title: s,
                             isCompleted: false,
@@ -129,11 +71,11 @@ export default function TaskPage() {
             setTasks(enriched)
             saveTasks(enriched)
         } catch (err) {
-            console.error('Gemini client call failed', err)
-            alert('Gemini API failed.')
+            console.log('Gemini API response:', err)
+            console.error('Gemini API failed', err)
+            alert('AI suggestion failed. Try again later.')
         }
     }
-
 
 
     return (
